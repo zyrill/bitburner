@@ -16,26 +16,27 @@ export async function main(ns) {
 	// If not, try again with half the amount of RAM and recurse.
 	function buyServer(purchaseServerRam) {
 		if (ns.getServerMoneyAvailable('home') > ns.getPurchasedServerCost(purchaseServerRam)) {
-			// Buy unless no more servers can be bought and server would be smaller
+			// Buy unless no more servers can be bought and new server would be smaller
 			if (purchasedServers.length < ns.getPurchasedServerLimit) {
-				return ns.purchaseServer(crypto.randomUUID(),purchaseServerRam);
+				return ns.purchaseServer(crypto.randomUUID(), purchaseServerRam);
 			} else if (purchaseServerRam > minimalServerRam) {
 				// Find server with minimal RAM and replace it
 				for (const server of purchasedServers) {
 					if (ns.getServerMaxRam(server) == minimalServerRam) {
-						ns.deleteServer(ns.getHostname(server));
+						ns.killall(server);
+						ns.deleteServer(server);
 						break;
 					}
 				}
-				return ns.purchaseServer(crypto.randomUUID(),purchaseServerRam);
+				return ns.purchaseServer(crypto.randomUUID(), purchaseServerRam);
 			} else {
-				ns.toast("Server would be a downgrade, aborting buy.","error",10000);
+				ns.toast("Server would be a downgrade, aborting buy.", "error", 10000);
 			}
 		}
 		else {
-			buyServer(purchaseServerRam/2);
+			buyServer(purchaseServerRam / 2);
 		}
 	}
-	
+
 	buyServer(ns.getPurchasedServerMaxRam());
 }
