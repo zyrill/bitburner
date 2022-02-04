@@ -1,7 +1,7 @@
 /** @param {NS} ns **/
 // Check price of server and if sufficient funds are available, buy it.
 // If not, try again with half the amount of RAM and recurse.
-export default function buyServer(ns, purchaseServerRam) {
+export function buyServer(ns, purchaseServerRam) {
 	// Find RAM size of smallest server
 	var purchasedServers = ns.getPurchasedServers();
 	var minimalServerRam = 0;

@@ -1,12 +1,12 @@
 /** @param {NS} ns **/
-export default function traverseNetwork(ns, host, hostList) {
+export function listHosts(ns, host, hostList) {
 	if (hostList.indexOf(host) == -1) {
 		hostList.push(host);
-		ns.scan(host).forEach(host => traverseNetwork(ns, host, hostList));
+		ns.scan(host).forEach(host => listHosts(ns, host, hostList));
 	}
 	return hostList;
 }
 
 export async function main(ns) {
-	ns.tprint(traverseNetwork(ns, "home", []));
+	ns.tprint(listHosts(ns, "home", []));
 }
