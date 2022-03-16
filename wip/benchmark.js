@@ -2,7 +2,7 @@
 export function batchRun(server, host) {
 	let relativeSecurityLevel = ns.getServerSecurityLevel(host) - ns.getServerMinSecurityLevel(host);
 	let getServerFreeRam = ns.getServerMaxRam(server) - ns.getServerUsedRam(server);
-	let growThreadsTotal = Math.ceil(ns.growthAnalyze(host, (ns.getServerMaxMoney(host) / (ns.getServerMoneyAvailable(host)+1))));
+	let growThreadsTotal = Math.ceil(ns.growthAnalyze(host, (ns.getServerMaxMoney(host) / (ns.getServerMoneyAvailable(host) + 1))));
 	let growSecurityIncrease = ns.growthAnalyzeSecurity(growThreadsTotal);
 	let compensateGrowThreadsTotal = Math.ceil((relativeSecurityLevel + growSecurityIncrease) / 0.05);
 	let hackThreadsTotal = Math.ceil(0.999 / ns.hackAnalyze(host));
@@ -26,7 +26,7 @@ export function batchRun(server, host) {
 				ns.exec("grow.js", server, growThreadsActual, host, (i * growTime));
 				ns.exec("weaken.js", server, compensateGrowThreadsActual, host, (1000 + (i + 1) * (growTime - weakenTime)));
 			} else {
-				ns.exec("grow.js", server, growThreadsRemaining, host, (i * growTime));	
+				ns.exec("grow.js", server, growThreadsRemaining, host, (i * growTime));
 				ns.exec("weaken.js", server, compensateGrowThreadsActual, host, (1000 + (i + 1) * (growTime - weakenTime)));
 			}
 			growThreadsRemaining = growThreadsRemaining - growThreadsActual;
@@ -36,25 +36,29 @@ export function batchRun(server, host) {
 		ns.exec("grow.js", server, growThreadsTotal, host, 0);
 		ns.exec("weaken.js", server, compensateGrowThreadsNeeded, host, (1000 + growTime - weakenTime));
 	}
+	let j = 0;
 	if (getServerFreeRam < (hackThreadsTotal * ns.getScriptRam('hack.js') + compensateHackThreadsTotal * ns.getScriptRam('weaken.js'))) {
-		let offsetHack = i * growTime;
+		let offsetHack = (i - 1) * weakenTime;
 		let hackThreadsRatio = hackThreadsTotal / (hackThreadsTotal + compensateHackThreadsTotal);
-		let scriptRamUsageTotal = ns.getScriptRam('grow.js') + ns.getScriptRam('weaken.js');
-		let growThreadsActual = Math.floor(getServerFreeRam / (growThreadsRatio * scriptRamUsageTotal));
-		let compensateGrowThreadsRatio = compensateGrowThreadsTotal / (growThreadsTotal + compensateGrowThreadsTotal);
-		let compensateGrowThreadsActual = Math.floor(getServerFreeRam / (compensateGrowThreadsRatio * scriptRamUsageTotal));
-		let growThreadsRemaining = growThreadsTotal - growThreadsActual;
-		while (growThreadsRemaining > 0) {
-			if (growThreadsRemaining >= growThreadsActual) {
-				ns.exec("grow.js", server, growThreadsActual, host, (i * growTime));
-				ns.exec("weaken.js", server, compensateGrowThreadsActual, host, (1000 + (i + 1) * (growTime - weakenTime)));
+		let scriptRamUsageTotal = ns.getScriptRam('hack.js') + ns.getScriptRam('weaken.js');
+		let hackThreadsActual = Math.floor(getServerFreeRam / (hackThreadsRatio * scriptRamUsageTotal));
+		let compensateHackThreadsRatio = compensateHackThreadsTotal / (hackThreadsTotal + compensateHackThreadsTotal);
+		let compensateHackThreadsActual = Math.floor(getServerFreeRam / (compensateHackThreadsRatio * scriptRamUsageTotal));
+		let hackThreadsRemaining = hackThreadsTotal - hackThreadsActual;
+		while (hackThreadsRemaining > 0) {
+			if (hackThreadsRemaining >= hackThreadsActual) {
+				ns.exec("hack.js", server, hackThreadsActual, host, (offsetHack + 2000 + weakenTime - hackTime));
+				ns.exec("weaken.js", server, compensateHackThreadsActual, host, (offsetHack + 3000 + (j + 1) * weakenTime));
 			} else {
-				ns.exec("grow.js", server, growThreadsRemaining, host, (i * growTime));	
-				ns.exec("weaken.js", server, compensateGrowThreadsActual, host, (1000 + (i + 1) * (growTime - weakenTime)));
+				ns.exec("hack.js", server, hackThreadsRemaining, host, (offsetHack + 2000 + weakenTime - hackTime));
+				ns.exec("weaken.js", server, compensateHackThreadsActual, host, (offsetHack + 3000 + (j + 1) * weakenTime));
 			}
-			growThreadsRemaining = growThreadsRemaining - growThreadsActual;
-			i++;
+			hackThreadsRemaining = hackThreadsRemaining - hackThreadsActual;
+			j++;
 		}
+	} else {
+		ns.exec("hack.js", server, hackThreadsNeeded, host, (2000 + weakenTime - hackTime));
+		ns.exec("weaken.js", server, compensateHackThreadsNeeded, host, 3000);
 	}
 }
 
@@ -63,7 +67,7 @@ export async function main(ns) {
 	var host = "foodnstuff";
 	//var host = "sigma-cosmetics";
 	//var host = "joesguns";
-		
+
 	// Regularly check if new servers are available for bootstrap
 	// bootstrapServers.js
 
@@ -74,8 +78,8 @@ export async function main(ns) {
 	// Calculate threads necessary for maximum growth, hack and weaken 
 	var relativeSecurityLevel = ns.getServerSecurityLevel(host) - ns.getServerMinSecurityLevel(host);
 	var getServerFreeRam = ns.getServerMaxRam(server) - ns.getServerUsedRam(server);
-	
-	var growThreadsNeeded = Math.ceil(ns.growthAnalyze(host, (ns.getServerMaxMoney(host) / (ns.getServerMoneyAvailable(host)+1))));
+
+	var growThreadsNeeded = Math.ceil(ns.growthAnalyze(host, (ns.getServerMaxMoney(host) / (ns.getServerMoneyAvailable(host) + 1))));
 	// If thread count surpasses server ram, scale down
 	if (getServerFreeRam < (growThreadsNeeded * ns.getScriptRam('grow.js')))
 		growThreadsNeeded = Math.floor(getServerFreeRam / ns.getScriptRam('grow.js'));
@@ -85,20 +89,20 @@ export async function main(ns) {
 	// If thread count surpasses server ram, scale down
 	if (getServerFreeRam < (compensateGrowThreadsNeeded * ns.getScriptRam('weaken.js')))
 		compensateGrowThreadsNeeded = Math.floor(getServerFreeRam / ns.getScriptRam('weaken.js'));
-	
-	ns.tprint(ns.hackAnalyze(host));
+
+	//ns.tprint(ns.hackAnalyze(host));
 	var hackThreadsNeeded = Math.ceil(0.999 / ns.hackAnalyze(host));
 	// If thread count surpasses server ram, scale down
 	if (getServerFreeRam < (hackThreadsNeeded * ns.getScriptRam('hack.js')))
 		hackThreadsNeeded = Math.floor(getServerFreeRam / ns.getScriptRam('hack.js'));
 	var hackSecurityIncrease = ns.hackAnalyzeSecurity(hackThreadsNeeded);
-	ns.tprint("hackThreadsNeeded: "+hackThreadsNeeded);
+	// ns.tprint("hackThreadsNeeded: "+hackThreadsNeeded);
 	// Shouldn't need to account for relativeSecurityLevel as that already happened during compensation for growth
 	var compensateHackThreadsNeeded = Math.ceil(hackSecurityIncrease / 0.05);
 	// If thread count surpasses server ram, scale down
 	if (getServerFreeRam < (compensateHackThreadsNeeded * ns.getScriptRam('weaken.js')))
 		compensateHackThreadsNeeded = Math.floor(getServerFreeRam / ns.getScriptRam('weaken.js'));
-	
+
 	var weakenTime = ns.getWeakenTime(host);
 	var growTime = ns.getGrowTime(host);
 	var hackTime = ns.getHackTime(host);
